@@ -12,19 +12,36 @@ library(lubridate) # variáveis temporais
 
 base <- read.csv("bases/dados_intestino.csv")
 
-
-# precisamos da indicadora censura e indicadora tempo de falha
-# também precisa desse tempo
+base_tratada <- base %>% 
+  mutate(
+    # calculo do tempo observado em meses
+    DATA_ULTIMA_INFO = as_date(DATA_ULTIMA_INFO),
+    data_diag = as_date(data_diag),
+    tempo_total = interval(ymd(data_diag),ymd(DATA_ULTIMA_INFO)),
+    tempo_total = as.period(tempo_total, unit = "months"),
+    tempo_meses = month(tempo_total),
+    
+    # criação das variáveis indicadoras de evento e 
+    
+    id_evento = case_when(
+      ULTINFO == 3 | ULTINFO == 4 ~ 1,
+      .default = 0
+    ), 
+    id_censura = case_when(
+      ULTINFO == 1 | ULTINFO == 2 ~ 1,
+     .default = 0
+    ), 
+  )
 
 # descritiva --------------------------------------------------------------
 
 # IDADE
-hist(base$IDADE) # boxplot talvez
-boxplot(base$IDADE, horizontal = TRUE)
+hist(base_tratada$IDADE) # boxplot talvez
+boxplot(base_tratada$IDADE, horizontal = TRUE)
 
 
 # SEXO
-base %>% 
+base_tratada %>% 
   group_by(SEXO) %>% 
   summarise(qntd = n()) %>% 
   mutate(prop = qntd/sum(qntd)) %>% 
@@ -32,8 +49,19 @@ base %>%
   geom_col(position = "fill")
 
 # ESCOLARIDADE
-base %>% 
+base_tratada %>% 
   group_by(ESCOLARI) %>% 
   summarise(qntd = n()) %>% 
   mutate(prop = qntd/sum(qntd))
 
+# CATEATED
+base_tratada %>% 
+  group_by(CATEATEND) %>% 
+  summarise(qntd = n()) %>% 
+  mutate(prop = qntd/sum(qntd))
+
+# ECGRUP
+base_tratada %>% 
+  group_by(ECGRUP) %>% 
+  summarise(qntd = n()) %>% 
+  mutate(prop = qntd/sum(qntd))
