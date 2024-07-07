@@ -3,7 +3,8 @@
 library(dplyr)
 library(survival)
 library(survminer)
-library(gridExtra)
+library(forcats)
+library(janitor)
 
 # leitura e tratamento  ---------------------------------------------------
 
@@ -17,7 +18,9 @@ base_modelo <- base_tratada %>% select("ESCOLARI", "IDADE", "SEXO", "CATEATEND",
     DESCTOPO == "JEJUNO" ~ "JEJ",
     DESCTOPO == "INTESTINO DELGADO LESAO SOBREPOSTA DO" ~ "ID LESAO SOBREPOSTA",
     TRUE ~ DESCTOPO)) %>%  # Renomeando essa coluna com diminutivos para praticidade
-  mutate(across(c(ESCOLARI, SEXO, CATEATEND, ECGRUP, DESCTOPO, id_evento), ~ factor(.)))
+  mutate(across(c(ESCOLARI, SEXO, CATEATEND, ECGRUP, DESCTOPO),
+                as.character)) %>%
+  clean_names()
     
 # kaplan meyer ------------------------------------------------------------
 
@@ -28,15 +31,15 @@ base_surv <- Surv(time = base_modelo$tempo_meses, base_modelo$id_evento)
 
 fit <- survfit(base_surv ~ 1, data = base_modelo)
 
-fit_escolaridade <- survfit(base_surv ~ ESCOLARI, data = base_modelo)
+fit_escolaridade <- survfit(base_surv ~ escolari, data = base_modelo)
 
-fit_sexo <- survfit(base_surv ~ SEXO, data = base_modelo)
+fit_sexo <- survfit(base_surv ~ sexo, data = base_modelo)
 
-fit_atendimento <- survfit(base_surv ~ CATEATEND, data = base_modelo)
+fit_atendimento <- survfit(base_surv ~ cateatend, data = base_modelo)
 
-fit_grupo <- survfit(base_surv ~ ECGRUP, data = base_modelo)
+fit_grupo <- survfit(base_surv ~ ecgrup, data = base_modelo)
 
-fit_topografia <- survfit(base_surv ~ DESCTOPO, data = base_modelo)
+fit_topografia <- survfit(base_surv ~ desctopo, data = base_modelo)
 
 # Gráficos de curva de Kaplan Meyer
 
@@ -72,20 +75,20 @@ km_plot6 <- ggsurvplot(fit_topografia, data = base_modelo,
 
 # testes de curvas -------------------------------------------------
 
-logrank_escolaridade <- survdiff(base_surv ~ ESCOLARI, data = base_modelo)
-wilcoxon_escolaridade <- survdiff(base_surv ~ ESCOLARI, data = base_modelo,
+logrank_escolaridade <- survdiff(base_surv ~ escolari, data = base_modelo)
+wilcoxon_escolaridade <- survdiff(base_surv ~ escolari, data = base_modelo,
                                   rho = 1)
 
-logrank_sexo <- survdiff(base_surv ~ SEXO, data = base_modelo)
-wilcoxon_sexo <- survdiff(base_surv ~ SEXO, data = base_modelo, rho = 1)
+logrank_sexo <- survdiff(base_surv ~ sexo, data = base_modelo)
+wilcoxon_sexo <- survdiff(base_surv ~ sexo, data = base_modelo, rho = 1)
 
-logrank_atendimento <- survdiff(base_surv ~ CATEATEND, data = base_modelo)
-wilcoxon_atendimento <- survdiff(base_surv ~ CATEATEND, data = base_modelo,
+logrank_atendimento <- survdiff(base_surv ~ cateatend, data = base_modelo)
+wilcoxon_atendimento <- survdiff(base_surv ~ cateatend, data = base_modelo,
                                  rho = 1)
 
-logrank_grupo <- survdiff(base_surv ~ ECGRUP, data = base_modelo)
-wilcoxon_grupo <- survdiff(base_surv ~ ECGRUP, data = base_modelo, rho = 1)
+logrank_grupo <- survdiff(base_surv ~ ecgrup, data = base_modelo)
+wilcoxon_grupo <- survdiff(base_surv ~ ecgrup, data = base_modelo, rho = 1)
 
-logrank_topografia <- survdiff(base_surv ~ DESCTOPO, data = base_modelo)
-wilcoxon_topografia <- survdiff(base_surv ~ DESCTOPO, data = base_modelo,
+logrank_topografia <- survdiff(base_surv ~ desctopo, data = base_modelo)
+wilcoxon_topografia <- survdiff(base_surv ~ desctopo, data = base_modelo,
                                 rho = 1)

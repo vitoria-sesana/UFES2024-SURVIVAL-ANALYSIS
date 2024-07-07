@@ -4,10 +4,11 @@ library(dplyr)
 library(survival)
 library(survminer)
 library(rcompanion)
+library(tidymodels)
 
 # Avaliando associação entre variáveis ------------------------------------
 
-base_categoricos <- base_modelo %>% select(-c("IDADE", "tempo_meses"))
+base_categoricos <- base_modelo %>% select(-c("idade", "tempo_meses","id_evento"))
 
 # Função para calcular matriz de V de Cramer
 cramerV_matrix <- function(data) {
@@ -35,11 +36,24 @@ cramerV_matrix <- function(data) {
 cramer_matriz <- cramerV_matrix(base_categoricos)
 # OBS: aparentemente baixa associação
 
+# Treinamento/Teste/Validação ----------------------------------------------
+
+set.seed(0)
+split<- initial_split(base_modelo, prop = 0.7, strata=tempo_meses)
+
+base_treino <- training(split)
+base_teste <- testing(split)
+
+folds<- vfold_cv(base_treino, v=5, strata=tempo_meses)
+
+# Aplicar modelos com base de treinamento aplicar crosss validation
 # Weibull e Exponencial ---------------------------------------------------
 
-model_weibull <- survreg(base_surv ~ ., data = base_modelo, dist = "weibull")
+model_weibull <- survreg(Surv(tempo_meses,id_evento) ~ ., data = base_modelo,
+                         dist = "weibull")
 
-model_exp <- survreg(base_surv ~ ., data = base_modelo, dist = "exponential")
+model_exp <- survreg(Surv(tempo_meses,id_evento) ~ ., data = base_modelo,
+                     dist = "exponential")
 
 # Testando se escala = 1 usando teste de razão de verossimilhança
 
@@ -55,14 +69,10 @@ if (p_trv_exp > 0.05) {
 
 # Log Logistica -----------------------------------------------------------
 
-#modelo_logit <- survreg(base_surv ~ ., data = base_modelo_scaled,
-#                               dist = "logistic",
-#                               control = survreg.control(maxiter = 1000))
-
-model_logit <- survreg(base_surv ~ ., data = base_modelo, dist = "logistic")
+model_logit <- survreg(Surv(tempo_meses,id_evento) ~ ., data = base_modelo,
+                       dist = "logistic")
 
 # Log Normal --------------------------------------------------------------
 
-#model_normal <-  survreg(base_surv ~ ., data = base_modelo_scaled,
-#                         dist = "gaussian",
-#                         control = survreg.control(maxiter = 1000))
+model_normal <- survreg(Surv(tempo_meses,id_evento) ~ ., data = base_modelo,
+                       dist = "gaussian")
