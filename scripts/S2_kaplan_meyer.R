@@ -9,7 +9,16 @@ library(gridExtra)
 
 base_modelo <- base_tratada %>% select("ESCOLARI", "IDADE", "SEXO", "CATEATEND",
                                        "ECGRUP", "DESCTOPO", "tempo_meses",
-                                       "id_evento")
+                                       "id_evento") %>%
+  mutate(DESCTOPO = case_when(
+    DESCTOPO == "INTESTINO DELGADO SOE" ~ "ID SOE",
+    DESCTOPO == "ILEO EXCLUI VALVULA ILEOCECAL C180" ~ "IEVIC C180",
+    DESCTOPO == "DUODENO" ~ "DUO",
+    DESCTOPO == "JEJUNO" ~ "JEJ",
+    DESCTOPO == "INTESTINO DELGADO LESAO SOBREPOSTA DO" ~ "ID LESAO SOBREPOSTA",
+    TRUE ~ DESCTOPO)) %>%  # Renomeando essa coluna com diminutivos para praticidade
+  mutate(across(c(ESCOLARI, SEXO, CATEATEND, ECGRUP, DESCTOPO, id_evento), ~ factor(.)))
+    
 # kaplan meyer ------------------------------------------------------------
 
 # Criando objeto de sobrevivência
@@ -61,3 +70,22 @@ km_plot6 <- ggsurvplot(fit_topografia, data = base_modelo,
                        ylab = "Sobrevida", xlab = "Tempo em dias",
                        legend.title = "Curva de Sobrevivência por Topografia")
 
+# testes de curvas -------------------------------------------------
+
+logrank_escolaridade <- survdiff(base_surv ~ ESCOLARI, data = base_modelo)
+wilcoxon_escolaridade <- survdiff(base_surv ~ ESCOLARI, data = base_modelo,
+                                  rho = 1)
+
+logrank_sexo <- survdiff(base_surv ~ SEXO, data = base_modelo)
+wilcoxon_sexo <- survdiff(base_surv ~ SEXO, data = base_modelo, rho = 1)
+
+logrank_atendimento <- survdiff(base_surv ~ CATEATEND, data = base_modelo)
+wilcoxon_atendimento <- survdiff(base_surv ~ CATEATEND, data = base_modelo,
+                                 rho = 1)
+
+logrank_grupo <- survdiff(base_surv ~ ECGRUP, data = base_modelo)
+wilcoxon_grupo <- survdiff(base_surv ~ ECGRUP, data = base_modelo, rho = 1)
+
+logrank_topografia <- survdiff(base_surv ~ DESCTOPO, data = base_modelo)
+wilcoxon_topografia <- survdiff(base_surv ~ DESCTOPO, data = base_modelo,
+                                rho = 1)
