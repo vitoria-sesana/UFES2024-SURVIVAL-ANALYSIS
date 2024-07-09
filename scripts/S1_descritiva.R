@@ -21,8 +21,7 @@ base_tratada <- base %>%
     tempo_total = as.period(tempo_total, unit = "months"),
     tempo_meses = month(tempo_total),
     
-    # criação das variáveis indicadoras de evento e 
-    
+    # criação das variáveis indicadoras de evento e censura
     id_evento = case_when(
       ULTINFO == 3 | ULTINFO == 4 ~ 1,
       .default = 0
@@ -54,14 +53,26 @@ base_tratada %>%
   summarise(qntd = n()) %>% 
   mutate(prop = qntd/sum(qntd))
 
-# CATEATED
+# CATEATED (Categoria de atendimento ao diagnóstico)
 base_tratada %>% 
   group_by(CATEATEND) %>% 
   summarise(qntd = n()) %>% 
   mutate(prop = qntd/sum(qntd))
 
-# ECGRUP
+# ECGRUP (Grupo do estadiamento clínico)
 base_tratada %>% 
   group_by(ECGRUP) %>% 
+  summarise(qntd = n()) %>% 
+  mutate(prop = qntd/sum(qntd))
+
+# TOPOGRUP (Grupo da topografia)
+base_tratada %>% 
+  group_by(TOPOGRUP) %>% 
+  summarise(qntd = n()) %>% 
+  mutate(prop = qntd/sum(qntd))
+
+# DESCTOPO (Descrição da topografia)
+base_tratada %>% 
+  group_by(DESCTOPO) %>% 
   summarise(qntd = n()) %>% 
   mutate(prop = qntd/sum(qntd))

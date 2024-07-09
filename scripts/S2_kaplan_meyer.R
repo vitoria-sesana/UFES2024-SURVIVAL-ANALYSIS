@@ -92,3 +92,4 @@ wilcoxon_grupo <- survdiff(base_surv ~ ecgrup, data = base_modelo, rho = 1)
 logrank_topografia <- survdiff(base_surv ~ desctopo, data = base_modelo)
 wilcoxon_topografia <- survdiff(base_surv ~ desctopo, data = base_modelo,
                                 rho = 1)
+
