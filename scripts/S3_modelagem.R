@@ -36,17 +36,6 @@ cramerV_matrix <- function(data) {
 cramer_matriz <- cramerV_matrix(base_categoricos)
 # OBS: aparentemente baixa associação
 
-# Treinamento/Teste/Validação ----------------------------------------------
-
-set.seed(0)
-split<- initial_split(base_modelo, prop = 0.7, strata=tempo_meses)
-
-base_treino <- training(split)
-base_teste <- testing(split)
-
-folds<- vfold_cv(base_treino, v=5, strata=tempo_meses)
-
-# Aplicar modelos com base de treinamento aplicar crosss validation
 # Weibull e Exponencial ---------------------------------------------------
 
 model_weibull <- survreg(Surv(tempo_meses,id_evento) ~ ., data = base_modelo,
@@ -70,9 +59,90 @@ if (p_trv_exp > 0.05) {
 # Log Logistica -----------------------------------------------------------
 
 model_logit <- survreg(Surv(tempo_meses,id_evento) ~ ., data = base_modelo,
-                       dist = "logistic")
+                       dist = "loglogistic")
 
 # Log Normal --------------------------------------------------------------
 
 model_normal <- survreg(Surv(tempo_meses,id_evento) ~ ., data = base_modelo,
-                       dist = "gaussian")
+                       dist = "lognormal")
+
+# Gráficos de Linearização ------------------------------------------------
+
+time <- fit$time
+
+st <- fit$surv
+
+invst <-qnorm(st)
+
+par(mfrow=c(1,3))
+plot(time, -log(st),pch=16,xlab="Tempos",
+     ylab="-log(S(t))", main = "Exponencial")
+plot(log(time),log(-log(st)),pch=16,xlab="log(tempos)",
+     ylab="log(-log(S(t))",main = "Weibull")
+plot(log(time),invst,pch=16,xlab="log(tempos)",
+     ylab=expression(Phi^-1*(S(t))), main = "LogNormal")
+
+# Gráficos  de Kaplan Meyer vs Modelo Paramétrico ------------------------
+
+# Função para calcular as sobrevivências ajustadas
+calc_surv <- function(modelo, dados) {
+  linear_predictor <- predict(modelo, newdata = dados,
+                              type = "lp")
+  scale <- modelo$scale
+  if (modelo$dist == "weibull") {
+    scale <- 1 / scale
+    surv <- exp(- (dados$tempo_meses / exp(linear_predictor)) ^ scale)
+  } else if (modelo$dist == "exponential") {
+    surv <- exp(- dados$tempo_meses / exp(linear_predictor))
+  } else if (modelo$dist == "loglogistic") {
+    surv <- 1 / (1 + exp((log(dados$tempo_meses) - linear_predictor) / scale))
+  } else if (modelo$dist == "lognormal") {
+    surv <- (log(dados$tempo_meses) - linear_predictor) / scale
+  }
+  return(surv)
+}
+
+# Calculando as sobrevivências ajustadas
+base_modelo$surv_weibull <- calc_surv(model_weibull, base_modelo)
+base_modelo$surv_exp <- calc_surv(model_exp, base_modelo)
+base_modelo$surv_logit <- calc_surv(model_logit, base_modelo)
+base_modelo$surv_normal <- calc_surv(model_normal, base_modelo)
+
+par(mfrow = c(1,2 ))
+
+# Kaplan-Meier vs. Modelo Exponencial
+plot(st, base_modelo$surv_exp[match(time, base_modelo$tempo_meses)], pch = 16,
+     ylim = range(c(0.0, 1)), xlim = range(c(0, 1)), xlab = "S(t): Kaplan-Meier",
+     ylab = "S(t): Exponencial")
+lines(c(0, 1), c(0, 1), type = "l", lty = 1)
+
+# Kaplan-Meier vs. Modelo Weibull
+plot(st, base_modelo$surv_weibull[match(time, base_modelo$tempo_meses)], pch = 16,
+     ylim = range(c(0.0, 1)), xlim = range(c(0, 1)), xlab = "S(t): Kaplan-Meier",
+     ylab = "S(t): Weibull")
+lines(c(0, 1), c(0, 1), type = "l", lty = 1)
+
+# Kaplan-Meier vs. Modelo Log-Logistico
+plot(st, base_modelo$surv_logit[match(time, base_modelo$tempo_meses)], pch = 16,
+     ylim = range(c(0.0, 1)), xlim = range(c(0, 1)), xlab = "S(t): Kaplan-Meier",
+     ylab = "S(t): Log-Logistico")
+lines(c(0, 1), c(0, 1), type = "l", lty = 1)
+
+# Kaplan-Meier vs. Modelo Normal
+plot(st, base_modelo$surv_normal[match(time, base_modelo$tempo_meses)], pch = 16,
+     ylim = range(c(0.0, 1)), xlim = range(c(0, 1)), xlab = "S(t): Kaplan-Meier",
+     ylab = "S(t): Log-Normal")
+lines(c(0, 1), c(0, 1), type = "l", lty = 1)
+
+
+# Teste de Razão de Verossimilhança para melhor modelo --------------------
+
+
+
+
+
+
+
+
+
+
