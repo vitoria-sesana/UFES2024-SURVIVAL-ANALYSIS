@@ -4,9 +4,10 @@
 
 # pacotes -----------------------------------------------------------------
 
-library(dplyr) # manipulação
-library(ggplot2) # gráficos
-library(lubridate) # variáveis temporais
+require(dplyr) # manipulação
+require(ggplot2) # gráficos
+require(lubridate) # variáveis temporais
+require(maxstat)
 
 # leitura e tratamento ----------------------------------------------------
 
@@ -38,6 +39,9 @@ base_tratada <- base %>%
 hist(base_tratada$IDADE) # boxplot talvez
 boxplot(base_tratada$IDADE, horizontal = TRUE)
 
+# ponto de corte para IDADE
+mod <- maxstat.test(Surv(tempo_meses, id_censura) ~ IDADE, data=base_tratada, smethod="LogRank")
+print(mod)
 
 # SEXO
 base_tratada %>% 
