@@ -8,18 +8,19 @@ library(janitor)
 
 # leitura e tratamento  ---------------------------------------------------
 
-base_modelo <- base_tratada %>% select("ESCOLARI", "IDADE", "SEXO", "CATEATEND",
-                                       "ECGRUP", "DESCTOPO", "tempo_meses",
-                                       "id_evento") %>%
-  mutate(DESCTOPO = case_when(
-    DESCTOPO == "INTESTINO DELGADO SOE" ~ "ID SOE",
-    DESCTOPO == "ILEO EXCLUI VALVULA ILEOCECAL C180" ~ "IEVIC C180",
-    DESCTOPO == "DUODENO" ~ "DUO",
-    DESCTOPO == "JEJUNO" ~ "JEJ",
-    DESCTOPO == "INTESTINO DELGADO LESAO SOBREPOSTA DO" ~ "ID LESAO SOBREPOSTA",
-    TRUE ~ DESCTOPO)) %>%  # Renomeando essa coluna com diminutivos para praticidade
-  mutate(across(c(ESCOLARI, SEXO, CATEATEND, ECGRUP, DESCTOPO),
+base_modelo <- base_tratada %>%
+#  mutate(DESCTOPO = case_when(
+#    DESCTOPO == "INTESTINO DELGADO SOE" ~ "ID SOE",
+#    DESCTOPO == "ILEO EXCLUI VALVULA ILEOCECAL C180" ~ "IEVIC C180",
+#    DESCTOPO == "JEJUNO" ~ "JEJ",
+#    DESCTOPO == "INTESTINO DELGADO LESAO SOBREPOSTA DO" ~ "ID LESAO SOBREPOSTA",
+#    TRUE ~ DESCTOPO)) %>%  # Renomeando essa coluna com diminutivos para praticidade
+  mutate(across(c(ESCOLARI, SEXO, CATEATEND, ECGRUP),
                 as.character)) %>%
+  mutate(idade_cat = ifelse(IDADE < 69, "1", "2")) %>%
+  select("ESCOLARI", "idade_cat", "SEXO", "CATEATEND",
+         "ECGRUP", "tempo_meses",
+         "id_evento") %>%
   clean_names()
     
 # kaplan meyer ------------------------------------------------------------
@@ -39,11 +40,11 @@ fit_atendimento <- survfit(base_surv ~ cateatend, data = base_modelo)
 
 fit_grupo <- survfit(base_surv ~ ecgrup, data = base_modelo)
 
-fit_topografia <- survfit(base_surv ~ desctopo, data = base_modelo)
+fit_idade <- survfit(base_surv ~ idade_cat, data = base_modelo)
 
 # Gráficos de curva de Kaplan Meyer
 
-km_plot <- ggsurvplot(fit, data = base_modelo,
+km_plot1 <- ggsurvplot(fit_idade, data = base_modelo,
                       pval = TRUE, conf.int = TRUE, conf.int.style = "step",
                       ylab = "Sobrevida", xlab = "Tempo em dias",
                       legend.title = "Curva de Sobrevivência")
@@ -68,10 +69,10 @@ km_plot5 <- ggsurvplot(fit_grupo, data = base_modelo,
                        ylab = "Sobrevida", xlab = "Tempo em dias",
                        legend.title = "Curva de Sobrevivência por Grupo")
 
-km_plot6 <- ggsurvplot(fit_topografia, data = base_modelo,
-                       pval = TRUE, conf.int = TRUE, conf.int.style = "step",
-                       ylab = "Sobrevida", xlab = "Tempo em dias",
-                       legend.title = "Curva de Sobrevivência por Topografia")
+#km_plot6 <- ggsurvplot(fit_topografia, data = base_modelo,
+#                       pval = TRUE, conf.int = TRUE, conf.int.style = "step",
+#                       ylab = "Sobrevida", xlab = "Tempo em dias",
+#                       legend.title = "Curva de Sobrevivência por Topografia")
 
 # testes de curvas -------------------------------------------------
 
@@ -89,7 +90,7 @@ wilcoxon_atendimento <- survdiff(base_surv ~ cateatend, data = base_modelo,
 logrank_grupo <- survdiff(base_surv ~ ecgrup, data = base_modelo)
 wilcoxon_grupo <- survdiff(base_surv ~ ecgrup, data = base_modelo, rho = 1)
 
-logrank_topografia <- survdiff(base_surv ~ desctopo, data = base_modelo)
-wilcoxon_topografia <- survdiff(base_surv ~ desctopo, data = base_modelo,
+logrank_idade <- survdiff(base_surv ~ idade_cat, data = base_modelo)
+wilcoxon_idade <- survdiff(base_surv ~ idade_cat, data = base_modelo,
                                 rho = 1)
 

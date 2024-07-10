@@ -9,11 +9,11 @@ library(flexsurv) # modelo gama generalizada
 
 # Avaliando associação entre variáveis ------------------------------------
 
-base_categoricos <- base_modelo %>% select(-c("idade", "tempo_meses","id_evento"))
+base_categoricos <- base_modelo %>% select(-c("tempo_meses","id_evento"))
 
 # Função para calcular matriz de V de Cramer
 cramerV_matrix <- function(data) {
-  cat_vars <- data %>% select_if(is.factor)
+  cat_vars <- data %>% select_if(is.character)
   
   cat_var_names <- names(cat_vars)
   
@@ -109,7 +109,7 @@ base_modelo$surv_exp <- calc_surv(model_exp, base_modelo)
 base_modelo$surv_logit <- calc_surv(model_logit, base_modelo)
 base_modelo$surv_normal <- calc_surv(model_normal, base_modelo)
 
-par(mfrow = c(1,2 ))
+par(mfrow = c(1,2))
 
 # Kaplan-Meier vs. Modelo Exponencial
 plot(st, base_modelo$surv_exp[match(time, base_modelo$tempo_meses)], pch = 16,
