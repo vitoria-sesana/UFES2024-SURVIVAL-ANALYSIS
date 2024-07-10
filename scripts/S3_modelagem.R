@@ -1,10 +1,11 @@
 # pacotes -----------------------------------------------------------------
 
-library(dplyr)
-library(survival)
+library(dplyr) # manipulação de dados
+library(survival) # modelo de sobrevivencia
 library(survminer)
 library(rcompanion)
 library(tidymodels)
+library(flexsurv) # modelo gama generalizada
 
 # Avaliando associação entre variáveis ------------------------------------
 
@@ -128,7 +129,7 @@ plot(st, base_modelo$surv_logit[match(time, base_modelo$tempo_meses)], pch = 16,
      ylab = "S(t): Log-Logistico")
 lines(c(0, 1), c(0, 1), type = "l", lty = 1)
 
-# Kaplan-Meier vs. Modelo Normal
+# Kaplan-Meier vs. Modelo Log Normal
 plot(st, base_modelo$surv_normal[match(time, base_modelo$tempo_meses)], pch = 16,
      ylim = range(c(0.0, 1)), xlim = range(c(0, 1)), xlab = "S(t): Kaplan-Meier",
      ylab = "S(t): Log-Normal")
@@ -137,10 +138,36 @@ lines(c(0, 1), c(0, 1), type = "l", lty = 1)
 
 # Teste de Razão de Verossimilhança para melhor modelo --------------------
 
+# Ajustando modelo Gama generalizada
 
+model_gengamma <- flexsurvreg(Surv(tempo_meses, id_evento) ~ ., data = base_modelo,
+                               dist = "gengamma")
 
+# weibull x gama generalisada
 
+trv_weibull <- -2*(model_weibull$loglik[2] - logLik(model_gengamma))
 
+p_trv_weibull <- pchisq(trv_weibull, df = length(coef(model_gengamma)) - model_weibull$df,
+                        lower.tail = FALSE)
+
+if (p_trv_weibull > 0.05) {
+  cat("Não rejeitamos a hipótese nula. O modelo é adequado.\n")
+} else {
+  cat("Rejeitamos a hipótese nula. O modelo não é adequado.\n")
+}
+
+# log normal
+
+trv_normal <- -2*(model_normal$loglik[2] - logLik(model_gengamma))
+
+p_trv_normal <- pchisq(trv_normal,df = length(coef(model_gengamma)) - model_normal$df,
+                       lower.tail = FALSE)
+
+if (p_trv_normal > 0.05) {
+  cat("Não rejeitamos a hipótese nula. O modelo é adequado.\n")
+} else {
+  cat("Rejeitamos a hipótese nula. O modelo não é adequado.\n")
+}
 
 
 
