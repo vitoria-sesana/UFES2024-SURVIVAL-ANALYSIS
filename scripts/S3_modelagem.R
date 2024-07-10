@@ -156,7 +156,20 @@ if (p_trv_weibull > 0.05) {
   cat("Rejeitamos a hipótese nula. O modelo não é adequado.\n")
 }
 
-# log normal
+# log logistica x gama generalisada
+
+trv_logit <- -2*(model_logit$loglik[2] - logLik(model_gengamma))
+
+p_trv_logit <- pchisq(trv_logit, df = length(coef(model_gengamma)) - model_logit$df,
+                        lower.tail = FALSE)
+
+if (p_trv_logit > 0.05) {
+  cat("Não rejeitamos a hipótese nula. O modelo é adequado.\n")
+} else {
+  cat("Rejeitamos a hipótese nula. O modelo não é adequado.\n")
+}
+
+# log normal x gama generalisada
 
 trv_normal <- -2*(model_normal$loglik[2] - logLik(model_gengamma))
 
